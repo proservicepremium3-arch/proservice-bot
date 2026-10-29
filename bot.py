@@ -114,7 +114,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN") or "9076272219:AAEkIbp1KKlVRBqmsuOB_S1Vcc33hY
 ADMIN_ID_RAW = os.getenv("ADMIN_ID") or "7451912153"
 ADMIN_IDS = [int(x.strip()) for x in ADMIN_ID_RAW.split(",") if x.strip().isdigit()]
 
-COOLDOWN_MINUTES = int(os.getenv("AUTO_REPLY_COOLDOWN_MINUTES", "15"))
+COOLDOWN_MINUTES = int(os.getenv("AUTO_REPLY_COOLDOWN_MINUTES", "1440"))  # 24 hours = 1440 minutes
 
 # Logging setup
 logging.basicConfig(
@@ -157,8 +157,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Customer handling
     database.save_or_update_user(user.id, user.first_name, user.last_name, user.username)
 
-    welcome_msg = database.get_setting("welcome_message")
-    await send_welcome_or_autoreply(update, welcome_msg)
+    # Show welcome message once every 24 hours per user ID
+    if database.should_send_autoreply(user.id, COOLDOWN_MINUTES):
+        welcome_msg = database.get_setting("welcome_message")
+        await send_welcome_or_autoreply(update, welcome_msg)
+        database.record_autoreply(user.id)
+    else:
+        await update.message.reply_text("👋 សូមផ្ញើសារ ឬសំណួររបស់លោកអ្នកមកទីនេះ ក្រុមការងារយើងនឹងឆ្លើយតបជូនឆាប់ៗនេះ។ 🙏")
 
     # Notify admins about new user start
     customer_info = (
