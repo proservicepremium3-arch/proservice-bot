@@ -3,6 +3,8 @@ import sys
 import logging
 import threading
 import io
+import html
+import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from dotenv import load_dotenv
 
@@ -187,6 +189,8 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN") or "9076272219:AAEkIbp1KKlVRBqmsuOB_S1Vcc33hYZVH1s"
 ADMIN_ID_RAW = os.getenv("ADMIN_ID") or "7451912153"
 ADMIN_IDS = [int(x.strip()) for x in ADMIN_ID_RAW.split(",") if x.strip().isdigit()]
+if not ADMIN_IDS:
+    ADMIN_IDS = [7451912153]
 
 COOLDOWN_MINUTES = int(os.getenv("AUTO_REPLY_COOLDOWN_MINUTES", "1440"))  # 24 hours = 1440 minutes
 
@@ -205,17 +209,20 @@ def is_admin(user_id: int) -> bool:
 # --- Command Handlers ---
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update or not update.effective_user:
+        return
+
     user = update.effective_user
     chat_id = update.effective_chat.id
 
     if is_admin(user.id):
         help_text = (
             "👑 <b>ផ្ទាំងគ្រប់គ្រង Admin (Admin Dashboard)</b>\n\n"
-            "Bot កំពុងដំណើរការជាធម្មតា!\n\n"
+            "Bot កំពុងដំណើរការជាធម្មតា និងភ្ជាប់ទៅកាន់គណនី Admin ជោគជ័យ! ✅\n\n"
             "📌 <b>របៀបឆ្លើយតបទៅកាន់ភ្ញៀវ៖</b>\n"
-            "• ពេលមានភ្ញៀវឆាតមក Bot នឹងបញ្ជូនសារមកទីនេះ។\n"
+            "• ពេលមានភ្ញៀវឆាតមក ឬចុច /start Bot នឹងបញ្ជូនដំណឹងមកទីនេះភ្លាមៗ។\n"
             "• លោកអ្នកគ្រាន់តែចុច <b>Reply</b> លើសារនោះ រួចវាយសារតបវិញ នោះ Bot នឹងផ្ញើជូនភ្ញៀវភ្លាមៗ។\n\n"
-            "🛠 <b>បញ្ជាផ្សេងៗ (Commands):</b>\n"
+            "🛠 <b>ពាក្យបញ្ជាសំខាន់ៗ (Commands):</b>\n"
             "• /qr - មើល និងផ្ញើ QR Scan ទទួលប្រាក់\n"
             "• /products - មើលបញ្ជី និងផ្ញើព័ត៌មាន Products ទាំង ១៣\n"
             "• /guides - មើលបញ្ជី Guides & គោលការណ៍ទាំង ៣\n"
@@ -228,29 +235,63 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• /setautoreply &lt;សារ&gt; - កំណត់សារ Auto-reply ថ្មី\n"
             "• /help - បង្ហាញជំនួយនេះឡើងវិញ"
         )
-        await update.message.reply_text(help_text, parse_mode=ParseMode.HTML)
+        admin_kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🌐 មើលផ្ទាំងសារស្វាគមន៍ (Welcome Preview)", callback_data=f"adm_prev:{user.id}")],
+            [
+                InlineKeyboardButton("⚡ Quick Replies", callback_data=f"qmenu:{user.id}"),
+                InlineKeyboardButton("📦 Products", callback_data=f"pmenu:{user.id}")
+            ],
+            [
+                InlineKeyboardButton("📖 Guides", callback_data=f"gmenu:{user.id}"),
+                InlineKeyboardButton("💳 QR Scan", callback_data=f"sendqr:{user.id}")
+            ],
+        ])
+        await update.message.reply_text(help_text, parse_mode=ParseMode.HTML, reply_markup=admin_kb)
         return
 
-    # Customer handling
-    database.save_or_update_user(user.id, user.first_name, user.last_name, user.username)
+    # Customer handling:
+    # 1. Save or update user in database
+    try:
+        database.save_or_update_user(user.id, user.first_name, user.last_name, user.username)
+    except Exception as db_err:
+        logger.error(f"Error saving user in start_command: {db_err}")
 
-    # Show welcome message once every 24 hours per user ID
-    if database.should_send_autoreply(user.id, COOLDOWN_MINUTES):
+    # 2. ALWAYS send Welcome Banner on /start!
+    # (/start is an explicit start request, so welcome message should always appear)
+    try:
         welcome_msg = database.get_setting("welcome_message")
+        if not welcome_msg:
+            welcome_msg = (
+                "👋 𝐇𝐞𝐥𝐥𝐨 𝐃𝐞𝐚𝐫 𝐁𝐨𝐧𝐠 👋 𝐰𝐞𝐥𝐜𝐨𝐦𝐞 𝐭𝐨 \n"
+                "𝐏𝐑𝐎 𝐒𝐄𝐑𝐕𝐈𝐂𝐄 𝐏𝐑𝐄𝐌𝐈𝐔𝐌\n\n"
+                "សូមផ្ញើសារនៅទីនេះ ក្រុមការងារនឹងឆ្លើយតបបងអូនឱ្យបានលឿនបំផុត \n\n"
+                "⚡️Instead Delivery ⚡️ ⏰ Support Hours:9AM–10PM\n"
+                "2~10 minutes during working hours, no later than 12 hours.\n"
+                "📎Website: proservicepremium.site.je"
+            )
         await send_welcome_or_autoreply(update, welcome_msg)
         database.record_autoreply(user.id)
-    else:
-        await update.message.reply_text("👋 សូមផ្ញើសារ ឬសំណួររបស់លោកអ្នកមកទីនេះ ក្រុមការងារយើងនឹងឆ្លើយតបជូនឆាប់ៗនេះ។ 🙏")
+    except Exception as e:
+        logger.error(f"Error sending welcome on /start: {e}")
+        try:
+            await update.message.reply_text(
+                "👋 សូមផ្ញើសារ ឬសំណួររបស់លោកអ្នកមកទីនេះ ក្រុមការងារយើងនឹងឆ្លើយតបជូនឆាប់ៗនេះ។ 🙏"
+            )
+        except Exception:
+            pass
 
-    # Notify admins about new user start
+    # 3. Notify Admin about customer clicking /start
+    safe_name = html.escape(user.full_name or "Unknown")
+    safe_uname = f"@{html.escape(user.username)}" if user.username else "គ្មាន username"
+
     customer_info = (
         f"🔔 <b>ភ្ញៀវថ្មីបានចុច /start</b>\n"
-        f"👤 ឈ្មោះ: <b>{user.full_name}</b>\n"
+        f"👤 ឈ្មោះ: <b>{safe_name}</b> ({safe_uname})\n"
         f"🆔 ID: <code>{user.id}</code> (ចុចលើលេខដើម្បី Copy)\n"
-        f"🌐 Username: @{user.username if user.username else 'គ្មាន'}\n"
         f"📋 ឆ្លើយតបរហ័ស៖ <code>/reply {user.id} </code>\n\n"
         f"👇 <b>សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖</b>"
     )
+
     for admin_id in ADMIN_IDS:
         try:
             msg = await context.bot.send_message(
@@ -261,7 +302,24 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             database.save_message_mapping(msg.message_id, user.id, update.message.message_id)
         except Exception as e:
-            logger.error(f"Failed to notify admin {admin_id}: {e}")
+            logger.warning(f"Failed to notify admin {admin_id} with HTML: {e}. Retrying plain text...")
+            try:
+                plain_info = (
+                    f"🔔 ភ្ញៀវថ្មីបានចុច /start\n"
+                    f"👤 ឈ្មោះ: {user.full_name}\n"
+                    f"🆔 ID: {user.id}\n"
+                    f"🌐 Username: @{user.username if user.username else 'គ្មាន'}\n"
+                    f"📋 ឆ្លើយតបរហ័ស៖ /reply {user.id} \n\n"
+                    f"👇 សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖"
+                )
+                msg = await context.bot.send_message(
+                    chat_id=admin_id,
+                    text=plain_info,
+                    reply_markup=get_main_admin_keyboard(user.id)
+                )
+                database.save_message_mapping(msg.message_id, user.id, update.message.message_id)
+            except Exception as e2:
+                logger.error(f"Failed to notify admin {admin_id} in plain text: {e2}")
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -565,9 +623,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif update.message.sticker:
         msg_type_str = "🌟 Sticker"
 
+    safe_customer_name = html.escape(customer_name or "Unknown")
+    safe_username_str = f"@{html.escape(user.username)}" if user.username else "គ្មាន username"
+
     header_text = (
         f"📩 <b>សារថ្មីពីភ្ញៀវ ({msg_type_str})៖</b>\n"
-        f"👤 ឈ្មោះ: <b>{customer_name}</b> ({username_str})\n"
+        f"👤 ឈ្មោះ: <b>{safe_customer_name}</b> ({safe_username_str})\n"
         f"🆔 ID: <code>{user.id}</code> (ចុចលើលេខដើម្បី Copy)\n"
         f"📋 ឆ្លើយតបរហ័ស៖ <code>/reply {user.id} </code>\n\n"
         f"👇 <b>សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖</b>"
@@ -576,12 +637,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for admin_id in ADMIN_IDS:
         try:
             # Send info header with Clean Main Menu buttons
-            info_msg = await context.bot.send_message(
-                chat_id=admin_id,
-                text=header_text,
-                parse_mode=ParseMode.HTML,
-                reply_markup=get_main_admin_keyboard(user.id)
-            )
+            try:
+                info_msg = await context.bot.send_message(
+                    chat_id=admin_id,
+                    text=header_text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=get_main_admin_keyboard(user.id)
+                )
+            except Exception as html_err:
+                logger.warning(f"Failed to send HTML header to admin {admin_id}: {html_err}. Retrying plain text...")
+                plain_header = (
+                    f"📩 សារថ្មីពីភ្ញៀវ ({msg_type_str})៖\n"
+                    f"👤 ឈ្មោះ: {customer_name} ({username_str})\n"
+                    f"🆔 ID: {user.id}\n"
+                    f"📋 ឆ្លើយតបរហ័ស៖ /reply {user.id} \n\n"
+                    f"👇 សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖"
+                )
+                info_msg = await context.bot.send_message(
+                    chat_id=admin_id,
+                    text=plain_header,
+                    reply_markup=get_main_admin_keyboard(user.id)
+                )
             database.save_message_mapping(info_msg.message_id, user.id, update.message.message_id)
 
             try:
@@ -753,6 +829,26 @@ async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT
         except Exception as e:
             logger.error(f"Error sending QR via button: {e}")
             await query.message.reply_text(f"❌ មិនអាចផ្ញើ QR ជូនភ្ញៀវបានទេ៖ {e}")
+    elif data.startswith("adm_prev:"):
+        welcome_msg = database.get_setting("welcome_message")
+        if not welcome_msg:
+            welcome_msg = (
+                "👋 𝐇𝐞𝐥𝐥𝐨 𝐃𝐞𝐚𝐫 𝐁𝐨𝐧𝐠 👋 𝐰𝐞𝐥𝐜𝐨𝐦𝐞 𝐭𝐨 \n"
+                "𝐏𝐑𝐎 𝐒𝐄𝐑𝐕𝐈𝐂𝐄 𝐏𝐑𝐄𝐌𝐈𝐔𝐌\n\n"
+                "សូមផ្ញើសារនៅទីនេះ ក្រុមការងារនឹងឆ្លើយតបបងអូនឱ្យបានលឿនបំផុត \n\n"
+                "⚡️Instead Delivery ⚡️ ⏰ Support Hours:9AM–10PM\n"
+                "2~10 minutes during working hours, no later than 12 hours.\n"
+                "📎Website: proservicepremium.site.je"
+            )
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🌐 ចូលមើល Website", url="https://proservicepremium.site.je")]
+        ])
+        image_path = get_latest_image_path()
+        if image_path and os.path.exists(image_path):
+            with open(image_path, "rb") as photo:
+                await query.message.reply_photo(photo=photo, caption=welcome_msg, reply_markup=keyboard)
+        else:
+            await query.message.reply_text(text=welcome_msg, reply_markup=keyboard)
 
 
 async def qr_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -808,12 +904,23 @@ async def products_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
+BOT_VERSION = "2.2-clean-start"
+SERVER_START_TIME = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-type", "text/plain; charset=utf-8")
         self.end_headers()
-        self.wfile.write(b"Bot is online and running 24/7!")
+        body = (
+            f"PRO SERVICE Bot is Online 24/7!\n"
+            f"Version: {BOT_VERSION}\n"
+            f"Server Started: {SERVER_START_TIME}\n"
+            f"Active Admins: {ADMIN_IDS}\n"
+            f"Bot Username: @Proserviceonline_bot\n"
+        )
+        self.wfile.write(body.encode("utf-8"))
 
     def log_message(self, format, *args):
         pass  # Quiet logs
@@ -826,6 +933,10 @@ def run_health_server(port: int):
         server.serve_forever()
     except Exception as e:
         logger.error(f"Failed to start health server: {e}")
+
+
+async def global_error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.error(f"Global exception while handling an update: {context.error}", exc_info=context.error)
 
 
 def main():
@@ -841,6 +952,9 @@ def main():
     database.init_db()
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Global Error Handler
+    app.add_error_handler(global_error_handler)
 
     # Commands
     app.add_handler(CommandHandler("start", start_command))
@@ -858,7 +972,7 @@ def main():
 
     # Inline Button Callback (Quick Replies, Products & Guides Navigation)
     app.add_handler(CallbackQueryHandler(quick_reply_callback, pattern=r"^qr:"))
-    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|mmenu|prod|guide|sendqr):"))
+    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|mmenu|prod|guide|sendqr|adm_prev):"))
 
     # All regular messages (text, photos, files, voice, etc.)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_message))
