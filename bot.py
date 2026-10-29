@@ -23,6 +23,7 @@ from telegram.ext import (
     filters,
 )
 import database
+import products
 
 # Quick Reply Templates for Admin
 QUICK_REPLIES = {
@@ -63,6 +64,9 @@ def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("1️⃣1️⃣ Plan Expired", callback_data=f"qr:{customer_id}:11"),
+        ],
+        [
+            InlineKeyboardButton("📦 ផ្ញើ Products / សេវាកម្ម (13) ➡️", callback_data=f"pmenu:{customer_id}"),
         ],
     ])
 
@@ -142,6 +146,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• ពេលមានភ្ញៀវឆាតមក Bot នឹងបញ្ជូនសារមកទីនេះ។\n"
             "• លោកអ្នកគ្រាន់តែចុច <b>Reply</b> លើសារនោះ រួចវាយសារតបវិញ នោះ Bot នឹងផ្ញើជូនភ្ញៀវភ្លាមៗ។\n\n"
             "🛠 <b>បញ្ជាផ្សេងៗ (Commands):</b>\n"
+            "• /products - មើលបញ្ជី និងផ្ញើព័ត៌មាន Products ទាំង ១៣\n"
             "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១១\n"
             "• /users - មើលចំនួនភ្ញៀវសរុប និង ៥ នាក់ចុងក្រោយ\n"
             "• /reply &lt;ID&gt; &lt;សារ&gt; - ផ្ញើសារទៅកាន់ភ្ញៀវតាមលេខសម្គាល់ ID\n"
@@ -376,6 +381,23 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         await update.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}", quote=True)
                         return
 
+                # Check if Admin sent a product shortcut (e.g. canva, netflix, /spotify, etc.)
+                prod_key = clean_shortcut.lower()
+                if prod_key in products.PRODUCTS:
+                    prod_info = products.PRODUCTS[prod_key]
+                    try:
+                        await context.bot.send_message(chat_id=customer_chat_id, text=prod_info["text"])
+                        await update.message.reply_text(
+                            f"✅ បានផ្ញើព័ត៌មាន <b>{prod_info['name']}</b> ជូនភ្ញៀវរួចរាល់!",
+                            parse_mode=ParseMode.HTML,
+                            quote=True
+                        )
+                        return
+                    except Exception as e:
+                        logger.error(f"Error sending product info: {e}")
+                        await update.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}", quote=True)
+                        return
+
                 try:
                     # Forward/Copy the admin's reply directly to the customer
                     await context.bot.copy_message(
@@ -547,6 +569,61 @@ async def quick_reply_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         await query.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}")
 
 
+async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    if not is_admin(query.from_user.id):
+        return
+
+    data = query.data
+    if not data:
+        return
+
+    if data.startswith("pmenu:"):
+        customer_id = int(data.split(":")[1])
+        await query.edit_message_reply_markup(
+            reply_markup=products.get_products_keyboard(customer_id)
+        )
+    elif data.startswith("qmenu:"):
+        customer_id = int(data.split(":")[1])
+        await query.edit_message_reply_markup(
+            reply_markup=get_quick_reply_keyboard(customer_id)
+        )
+    elif data.startswith("prod:"):
+        parts = data.split(":")
+        if len(parts) == 3:
+            customer_id = int(parts[1])
+            prod_key = parts[2]
+            prod_info = products.PRODUCTS.get(prod_key)
+            if prod_info:
+                try:
+                    await context.bot.send_message(chat_id=customer_id, text=prod_info["text"])
+                    await query.message.reply_text(
+                        f"✅ <b>បានផ្ញើព័ត៌មាន {prod_info['name']} ជូនភ្ញៀវរួចរាល់!</b>",
+                        parse_mode=ParseMode.HTML
+                    )
+                except Exception as e:
+                    logger.error(f"Error sending product via button: {e}")
+                    await query.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}")
+
+
+async def products_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return
+
+    text = "📦 <b>បញ្ជីសេវាកម្ម / Products ទាំង ១៣ របស់ PRO SERVICE៖</b>\n\n"
+    for k, v in products.PRODUCTS.items():
+        text += f"• <b>{v['name']}</b> (បញ្ជាកាត់៖ <code>/{k}</code>)\n"
+
+    text += (
+        "\n👉 <b>របៀបផ្ញើទៅភ្ញៀវ៖</b>\n"
+        "• ចុចលើប៊ូតុង <b>[📦 ផ្ញើ Products]</b> នៅខាងក្រោមសារភ្ញៀវ រួចជ្រើសរើសសេវាកម្ម\n"
+        "• ឬចុច <b>Reply</b> លើសារភ្ញៀវ រួចវាយ <code>/canva</code>, <code>/netflix</code>, <code>/spotify</code>..."
+    )
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
+
+
 class HealthCheckHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -584,6 +661,7 @@ def main():
     # Commands
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("products", products_command))
     app.add_handler(CommandHandler("templates", templates_command))
     app.add_handler(CommandHandler("users", users_command))
     app.add_handler(CommandHandler("autoreply", autoreply_toggle))
@@ -592,8 +670,9 @@ def main():
     app.add_handler(CommandHandler("reply", reply_by_id_command))
     app.add_handler(CommandHandler("broadcast", broadcast_command))
 
-    # Inline Button Callback (Quick Replies)
+    # Inline Button Callback (Quick Replies & Products Navigation)
     app.add_handler(CallbackQueryHandler(quick_reply_callback, pattern=r"^qr:"))
+    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|qmenu|prod):"))
 
     # All regular messages (text, photos, files, voice, etc.)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_message))
