@@ -24,6 +24,7 @@ from telegram.ext import (
 )
 import database
 import products
+import guides
 
 # Quick Reply Templates for Admin
 QUICK_REPLIES = {
@@ -66,7 +67,8 @@ def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
             InlineKeyboardButton("1️⃣1️⃣ Plan Expired", callback_data=f"qr:{customer_id}:11"),
         ],
         [
-            InlineKeyboardButton("📦 ផ្ញើ Products / សេវាកម្ម (13) ➡️", callback_data=f"pmenu:{customer_id}"),
+            InlineKeyboardButton("📦 Products (13) ➡️", callback_data=f"pmenu:{customer_id}"),
+            InlineKeyboardButton("📖 Guides (3) ➡️", callback_data=f"gmenu:{customer_id}"),
         ],
     ])
 
@@ -147,6 +149,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• លោកអ្នកគ្រាន់តែចុច <b>Reply</b> លើសារនោះ រួចវាយសារតបវិញ នោះ Bot នឹងផ្ញើជូនភ្ញៀវភ្លាមៗ។\n\n"
             "🛠 <b>បញ្ជាផ្សេងៗ (Commands):</b>\n"
             "• /products - មើលបញ្ជី និងផ្ញើព័ត៌មាន Products ទាំង ១៣\n"
+            "• /guides - មើលបញ្ជី Guides & គោលការណ៍ទាំង ៣\n"
             "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១១\n"
             "• /users - មើលចំនួនភ្ញៀវសរុប និង ៥ នាក់ចុងក្រោយ\n"
             "• /reply &lt;ID&gt; &lt;សារ&gt; - ផ្ញើសារទៅកាន់ភ្ញៀវតាមលេខសម្គាល់ ID\n"
@@ -398,6 +401,32 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         await update.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}", quote=True)
                         return
 
+                # Check if Admin sent a guide shortcut (e.g. policy, household, netflixcode, netflixpolicy, guide1, guide2, guide3)
+                guide_map = {
+                    "policy": "policy",
+                    "guide1": "policy",
+                    "household": "netflix_household",
+                    "netflixcode": "netflix_household",
+                    "guide2": "netflix_household",
+                    "netflixpolicy": "netflix_policy",
+                    "guide3": "netflix_policy",
+                }
+                g_key = guide_map.get(clean_shortcut.lower())
+                if g_key and g_key in guides.GUIDES:
+                    g_info = guides.GUIDES[g_key]
+                    try:
+                        await context.bot.send_message(chat_id=customer_chat_id, text=g_info["text"])
+                        await update.message.reply_text(
+                            f"✅ បានផ្ញើ <b>{g_info['name']}</b> ជូនភ្ញៀវរួចរាល់!",
+                            parse_mode=ParseMode.HTML,
+                            quote=True
+                        )
+                        return
+                    except Exception as e:
+                        logger.error(f"Error sending guide info: {e}")
+                        await update.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}", quote=True)
+                        return
+
                 try:
                     # Forward/Copy the admin's reply directly to the customer
                     await context.bot.copy_message(
@@ -585,6 +614,11 @@ async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT
         await query.edit_message_reply_markup(
             reply_markup=products.get_products_keyboard(customer_id)
         )
+    elif data.startswith("gmenu:"):
+        customer_id = int(data.split(":")[1])
+        await query.edit_message_reply_markup(
+            reply_markup=guides.get_guides_keyboard(customer_id)
+        )
     elif data.startswith("qmenu:"):
         customer_id = int(data.split(":")[1])
         await query.edit_message_reply_markup(
@@ -606,6 +640,38 @@ async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT
                 except Exception as e:
                     logger.error(f"Error sending product via button: {e}")
                     await query.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}")
+    elif data.startswith("guide:"):
+        parts = data.split(":")
+        if len(parts) == 3:
+            customer_id = int(parts[1])
+            guide_key = parts[2]
+            guide_info = guides.GUIDES.get(guide_key)
+            if guide_info:
+                try:
+                    await context.bot.send_message(chat_id=customer_id, text=guide_info["text"])
+                    await query.message.reply_text(
+                        f"✅ <b>បានផ្ញើ {guide_info['name']} ជូនភ្ញៀវរួចរាល់!</b>",
+                        parse_mode=ParseMode.HTML
+                    )
+                except Exception as e:
+                    logger.error(f"Error sending guide via button: {e}")
+                    await query.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}")
+
+
+async def guides_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return
+
+    text = "📖 <b>បញ្ជី Guides & គោលការណ៍ណែនាំ (3)៖</b>\n\n"
+    for k, v in guides.GUIDES.items():
+        text += f"• <b>{v['name']}</b> (បញ្ជាកាត់៖ <code>/{k}</code>)\n"
+
+    text += (
+        "\n👉 <b>របៀបផ្ញើទៅភ្ញៀវ៖</b>\n"
+        "• ចុចលើប៊ូតុង <b>[📖 Guides (3)]</b> នៅខាងក្រោមសារភ្ញៀវ រួចជ្រើសរើស Guide\n"
+        "• ឬចុច <b>Reply</b> លើសារភ្ញៀវ រួចវាយ <code>/policy</code>, <code>/household</code>, <code>/netflixpolicy</code>"
+    )
+    await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
 async def products_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -662,6 +728,7 @@ def main():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("products", products_command))
+    app.add_handler(CommandHandler("guides", guides_command))
     app.add_handler(CommandHandler("templates", templates_command))
     app.add_handler(CommandHandler("users", users_command))
     app.add_handler(CommandHandler("autoreply", autoreply_toggle))
@@ -670,9 +737,9 @@ def main():
     app.add_handler(CommandHandler("reply", reply_by_id_command))
     app.add_handler(CommandHandler("broadcast", broadcast_command))
 
-    # Inline Button Callback (Quick Replies & Products Navigation)
+    # Inline Button Callback (Quick Replies, Products & Guides Navigation)
     app.add_handler(CallbackQueryHandler(quick_reply_callback, pattern=r"^qr:"))
-    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|qmenu|prod):"))
+    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|prod|guide):"))
 
     # All regular messages (text, photos, files, voice, etc.)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_message))
