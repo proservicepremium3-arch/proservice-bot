@@ -51,6 +51,9 @@ def get_guides_keyboard(customer_id: int) -> InlineKeyboardMarkup:
             InlineKeyboardButton("⚠️ Netflix Login Policy", callback_data=f"guide:{customer_id}:netflix_policy"),
         ],
         [
+            InlineKeyboardButton("💳 ផ្ញើ QR Scan (Payment) 📲", callback_data=f"sendqr:{customer_id}"),
+        ],
+        [
             InlineKeyboardButton("🔙 Quick Replies", callback_data=f"qmenu:{customer_id}"),
             InlineKeyboardButton("📦 Products", callback_data=f"pmenu:{customer_id}"),
         ]

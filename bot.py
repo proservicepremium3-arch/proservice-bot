@@ -67,6 +67,9 @@ def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
             InlineKeyboardButton("1️⃣1️⃣ Plan Expired", callback_data=f"qr:{customer_id}:11"),
         ],
         [
+            InlineKeyboardButton("💳 ផ្ញើ QR Scan (Payment) 📲", callback_data=f"sendqr:{customer_id}"),
+        ],
+        [
             InlineKeyboardButton("📦 Products (13) ➡️", callback_data=f"pmenu:{customer_id}"),
             InlineKeyboardButton("📖 Guides (3) ➡️", callback_data=f"gmenu:{customer_id}"),
         ],
@@ -74,6 +77,46 @@ def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
 
 # Directory for welcome/auto-reply images
 IMAGE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "image")
+
+# Directory for payment QR code images
+QR_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "QR")
+
+QR_CAPTION = (
+    "💳 <b>សូមស្កេនទូទាត់ប្រាក់តាម QR Code នេះបាទ/ចាស</b> 🙏\n\n"
+    "⚡️ <i>ក្រោយពេលផ្ទេរប្រាក់រួចរាល់ សូមផ្ញើវិក្កយបត្រ (Receipt / Screenshot) មកទីនេះ ដើម្បីក្រុមការងារពិនិត្យ និងប្រគល់គណនីជូនបងអូនភ្លាមៗ (2~10 នាទី)។</i>\n\n"
+    "🥰 <b>PRO SERVICE PREMIUM</b> សូមអរគុណសម្រាប់ការគាំទ្រ!"
+)
+
+def get_latest_qr_path():
+    if not os.path.exists(QR_DIR):
+        return None
+    valid_exts = ('.png', '.jpg', '.jpeg', '.webp')
+    images = [
+        os.path.join(QR_DIR, f)
+        for f in os.listdir(QR_DIR)
+        if f.lower().endswith(valid_exts)
+    ]
+    if not images:
+        return None
+    images.sort(key=lambda x: os.path.getmtime(x), reverse=True)
+    return images[0]
+
+async def send_qr_to_customer(context: ContextTypes.DEFAULT_TYPE, customer_id: int):
+    qr_path = get_latest_qr_path()
+    if qr_path and os.path.exists(qr_path):
+        with open(qr_path, "rb") as photo:
+            return await context.bot.send_photo(
+                chat_id=customer_id,
+                photo=photo,
+                caption=QR_CAPTION,
+                parse_mode=ParseMode.HTML
+            )
+    else:
+        return await context.bot.send_message(
+            chat_id=customer_id,
+            text=QR_CAPTION,
+            parse_mode=ParseMode.HTML
+        )
 
 def get_latest_image_path():
     if not os.path.exists(IMAGE_DIR):
@@ -148,6 +191,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• ពេលមានភ្ញៀវឆាតមក Bot នឹងបញ្ជូនសារមកទីនេះ។\n"
             "• លោកអ្នកគ្រាន់តែចុច <b>Reply</b> លើសារនោះ រួចវាយសារតបវិញ នោះ Bot នឹងផ្ញើជូនភ្ញៀវភ្លាមៗ។\n\n"
             "🛠 <b>បញ្ជាផ្សេងៗ (Commands):</b>\n"
+            "• /qr - មើល និងផ្ញើ QR Scan ទទួលប្រាក់\n"
             "• /products - មើលបញ្ជី និងផ្ញើព័ត៌មាន Products ទាំង ១៣\n"
             "• /guides - មើលបញ្ជី Guides & គោលការណ៍ទាំង ៣\n"
             "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១១\n"
@@ -427,6 +471,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         await update.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}", quote=True)
                         return
 
+                # Check if Admin sent QR shortcut (e.g. qr, /qr, pay, /pay, scan, /scan, bank, /bank)
+                if clean_shortcut.lower() in ["qr", "pay", "scan", "bank"]:
+                    try:
+                        await send_qr_to_customer(context, customer_chat_id)
+                        await update.message.reply_text("✅ បានផ្ញើ <b>QR Scan ទទួលប្រាក់</b> ជូនភ្ញៀវរួចរាល់!", parse_mode=ParseMode.HTML, quote=True)
+                        return
+                    except Exception as e:
+                        logger.error(f"Error sending QR via shortcut: {e}")
+                        await update.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}", quote=True)
+                        return
+
                 try:
                     # Forward/Copy the admin's reply directly to the customer
                     await context.bot.copy_message(
@@ -656,6 +711,38 @@ async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT
                 except Exception as e:
                     logger.error(f"Error sending guide via button: {e}")
                     await query.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}")
+    elif data.startswith("sendqr:"):
+        customer_id = int(data.split(":")[1])
+        try:
+            await send_qr_to_customer(context, customer_id)
+            await query.message.reply_text(
+                "✅ <b>បានផ្ញើ QR Scan ទទួលប្រាក់ជូនភ្ញៀវរួចរាល់!</b>",
+                parse_mode=ParseMode.HTML
+            )
+        except Exception as e:
+            logger.error(f"Error sending QR via button: {e}")
+            await query.message.reply_text(f"❌ មិនអាចផ្ញើ QR ជូនភ្ញៀវបានទេ៖ {e}")
+
+
+async def qr_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return
+
+    qr_path = get_latest_qr_path()
+    if qr_path and os.path.exists(qr_path):
+        with open(qr_path, "rb") as photo:
+            await update.message.reply_photo(
+                photo=photo,
+                caption=(
+                    "💳 <b>QR Scan សម្រាប់ទទួលប្រាក់ពីភ្ញៀវ</b>\n\n"
+                    "👉 <b>របៀបផ្ញើទៅភ្ញៀវ៖</b>\n"
+                    "• ចុចលើប៊ូតុង <b>[💳 ផ្ញើ QR Scan (Payment) 📲]</b> នៅខាងក្រោមសារភ្ញៀវ\n"
+                    "• ឬចុច <b>Reply</b> លើសារភ្ញៀវ រួចវាយ <code>/qr</code> ឬ <code>/pay</code>"
+                ),
+                parse_mode=ParseMode.HTML
+            )
+    else:
+        await update.message.reply_text("⚠️ រកមិនឃើញរូបភាព QR Code នៅក្នុង Folder 'QR' ឡើយ។")
 
 
 async def guides_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -727,6 +814,7 @@ def main():
     # Commands
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("qr", qr_command))
     app.add_handler(CommandHandler("products", products_command))
     app.add_handler(CommandHandler("guides", guides_command))
     app.add_handler(CommandHandler("templates", templates_command))
@@ -739,7 +827,7 @@ def main():
 
     # Inline Button Callback (Quick Replies, Products & Guides Navigation)
     app.add_handler(CallbackQueryHandler(quick_reply_callback, pattern=r"^qr:"))
-    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|prod|guide):"))
+    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|prod|guide|sendqr):"))
 
     # All regular messages (text, photos, files, voice, etc.)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_message))
