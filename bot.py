@@ -39,6 +39,10 @@ QUICK_REPLIES = {
     "9": "Please send us your Gmail address, and our team will check it for you soon 🥰",
     "10": "Any problems? ⚠️ Please send us a screenshot or details to make it easier for us to help you. 🥰",
     "11": "Your plan has expired 🥰",
+    "12": "okay bong waiting Please😊",
+    "13": "Just make sure, Please let us know again which plan you’d like to purchase 🥰",
+    "14": "Please wait while we check for you now 🥰",
+    "15": "We need your Gmail",
 }
 
 def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
@@ -65,8 +69,14 @@ def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("1️⃣1️⃣ Plan Expired", callback_data=f"qr:{customer_id}:11"),
+            InlineKeyboardButton("1️⃣2️⃣ Waiting Please", callback_data=f"qr:{customer_id}:12"),
         ],
         [
+            InlineKeyboardButton("1️⃣3️⃣ Which Plan", callback_data=f"qr:{customer_id}:13"),
+            InlineKeyboardButton("1️⃣4️⃣ Checking Now", callback_data=f"qr:{customer_id}:14"),
+        ],
+        [
+            InlineKeyboardButton("1️⃣5️⃣ Need Gmail", callback_data=f"qr:{customer_id}:15"),
             InlineKeyboardButton("💳 ផ្ញើ QR Scan (Payment) 📲", callback_data=f"sendqr:{customer_id}"),
         ],
         [
@@ -194,7 +204,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• /qr - មើល និងផ្ញើ QR Scan ទទួលប្រាក់\n"
             "• /products - មើលបញ្ជី និងផ្ញើព័ត៌មាន Products ទាំង ១៣\n"
             "• /guides - មើលបញ្ជី Guides & គោលការណ៍ទាំង ៣\n"
-            "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១១\n"
+            "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១៥\n"
             "• /users - មើលចំនួនភ្ញៀវសរុប និង ៥ នាក់ចុងក្រោយ\n"
             "• /reply &lt;ID&gt; &lt;សារ&gt; - ផ្ញើសារទៅកាន់ភ្ញៀវតាមលេខសម្គាល់ ID\n"
             "• /broadcast &lt;សារ&gt; - ផ្ញើសារប្រកាសដំណឹងជូនភ្ញៀវទាំងអស់\n"
@@ -609,13 +619,13 @@ async def templates_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    msg = "⚡ <b>បញ្ជី Quick Reply Templates ទាំង ១១៖</b>\n\n"
+    msg = "⚡ <b>បញ្ជី Quick Reply Templates ទាំង ១៥៖</b>\n\n"
     for k, v in QUICK_REPLIES.items():
         msg += f"<b>{k}️⃣:</b> <i>\"{v}\"</i>\n\n"
     msg += (
         "👉 <b>វិធីប្រើ៖</b>\n"
         "1. ចុចលើប៊ូតុង Quick Reply នៅខាងក្រោមសារភ្ញៀវភ្លាមៗ\n"
-        "2. ឬចុច <b>Reply</b> លើសារភ្ញៀវ រួចវាយលេខ <code>1</code> ដល់ <code>11</code>"
+        "2. ឬចុច <b>Reply</b> លើសារភ្ញៀវ រួចវាយលេខ <code>1</code> ដល់ <code>15</code>"
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
