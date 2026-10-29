@@ -412,8 +412,7 @@ def get_products_keyboard(customer_id: int) -> InlineKeyboardMarkup:
             InlineKeyboardButton("💳 ផ្ញើ QR Scan", callback_data=f"sendqr:{customer_id}"),
         ],
         [
-            InlineKeyboardButton("🔙 Quick Replies", callback_data=f"qmenu:{customer_id}"),
-            InlineKeyboardButton("📖 Guides", callback_data=f"gmenu:{customer_id}"),
+            InlineKeyboardButton("🔙 ត្រឡប់ក្រោយ (Main Menu)", callback_data=f"mmenu:{customer_id}"),
         ],
     ]
     return InlineKeyboardMarkup(buttons)

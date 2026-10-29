@@ -45,6 +45,22 @@ QUICK_REPLIES = {
     "15": "We need your Gmail",
 }
 
+def get_main_admin_keyboard(customer_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("⚡ Quick Replies (15) ➡️", callback_data=f"qmenu:{customer_id}"),
+        ],
+        [
+            InlineKeyboardButton("📦 Products / សេវាកម្ម (13) ➡️", callback_data=f"pmenu:{customer_id}"),
+        ],
+        [
+            InlineKeyboardButton("📖 Guides / គោលការណ៍ (3) ➡️", callback_data=f"gmenu:{customer_id}"),
+        ],
+        [
+            InlineKeyboardButton("💳 ផ្ញើ QR Scan (Payment) 📲", callback_data=f"sendqr:{customer_id}"),
+        ],
+    ])
+
 def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [
@@ -77,11 +93,10 @@ def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("1️⃣5️⃣ Need Gmail", callback_data=f"qr:{customer_id}:15"),
-            InlineKeyboardButton("💳 ផ្ញើ QR Scan (Payment) 📲", callback_data=f"sendqr:{customer_id}"),
+            InlineKeyboardButton("💳 ផ្ញើ QR Scan", callback_data=f"sendqr:{customer_id}"),
         ],
         [
-            InlineKeyboardButton("📦 Products (13) ➡️", callback_data=f"pmenu:{customer_id}"),
-            InlineKeyboardButton("📖 Guides (3) ➡️", callback_data=f"gmenu:{customer_id}"),
+            InlineKeyboardButton("🔙 ត្រឡប់ក្រោយ (Main Menu)", callback_data=f"mmenu:{customer_id}"),
         ],
     ])
 
@@ -233,7 +248,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👤 ឈ្មោះ: <b>{user.full_name}</b>\n"
         f"🆔 ID: <code>{user.id}</code> (ចុចលើលេខដើម្បី Copy)\n"
         f"🌐 Username: @{user.username if user.username else 'គ្មាន'}\n"
-        f"📋 ឆ្លើយតបរហ័ស៖ <code>/reply {user.id} </code>"
+        f"📋 ឆ្លើយតបរហ័ស៖ <code>/reply {user.id} </code>\n\n"
+        f"👇 <b>សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖</b>"
     )
     for admin_id in ADMIN_IDS:
         try:
@@ -241,7 +257,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 chat_id=admin_id,
                 text=customer_info,
                 parse_mode=ParseMode.HTML,
-                reply_markup=get_quick_reply_keyboard(user.id)
+                reply_markup=get_main_admin_keyboard(user.id)
             )
             database.save_message_mapping(msg.message_id, user.id, update.message.message_id)
         except Exception as e:
@@ -554,17 +570,17 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👤 ឈ្មោះ: <b>{customer_name}</b> ({username_str})\n"
         f"🆔 ID: <code>{user.id}</code> (ចុចលើលេខដើម្បី Copy)\n"
         f"📋 ឆ្លើយតបរហ័ស៖ <code>/reply {user.id} </code>\n\n"
-        f"⚡ <b>ចុចលើប៊ូតុងខាងក្រោមដើម្បីផ្ញើ Quick Reply ភ្លាមៗ៖</b>"
+        f"👇 <b>សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖</b>"
     )
 
     for admin_id in ADMIN_IDS:
         try:
-            # Send info header with Quick Reply buttons
+            # Send info header with Clean Main Menu buttons
             info_msg = await context.bot.send_message(
                 chat_id=admin_id,
                 text=header_text,
                 parse_mode=ParseMode.HTML,
-                reply_markup=get_quick_reply_keyboard(user.id)
+                reply_markup=get_main_admin_keyboard(user.id)
             )
             database.save_message_mapping(info_msg.message_id, user.id, update.message.message_id)
 
@@ -688,6 +704,11 @@ async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT
         customer_id = int(data.split(":")[1])
         await query.edit_message_reply_markup(
             reply_markup=get_quick_reply_keyboard(customer_id)
+        )
+    elif data.startswith("mmenu:"):
+        customer_id = int(data.split(":")[1])
+        await query.edit_message_reply_markup(
+            reply_markup=get_main_admin_keyboard(customer_id)
         )
     elif data.startswith("prod:"):
         parts = data.split(":")
@@ -837,7 +858,7 @@ def main():
 
     # Inline Button Callback (Quick Replies, Products & Guides Navigation)
     app.add_handler(CallbackQueryHandler(quick_reply_callback, pattern=r"^qr:"))
-    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|prod|guide|sendqr):"))
+    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|mmenu|prod|guide|sendqr):"))
 
     # All regular messages (text, photos, files, voice, etc.)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_message))
