@@ -110,8 +110,8 @@ async def send_welcome_or_autoreply(update: Update, text: str):
 # Load environment variables
 load_dotenv()
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID_RAW = os.getenv("ADMIN_ID", "")
+BOT_TOKEN = os.getenv("BOT_TOKEN") or "9076272219:AAEkIbp1KKlVRBqmsuOB_S1Vcc33hYZVH1s"
+ADMIN_ID_RAW = os.getenv("ADMIN_ID") or "7451912153"
 ADMIN_IDS = [int(x.strip()) for x in ADMIN_ID_RAW.split(",") if x.strip().isdigit()]
 
 COOLDOWN_MINUTES = int(os.getenv("AUTO_REPLY_COOLDOWN_MINUTES", "15"))
@@ -567,10 +567,9 @@ def main():
         print("❌ កំហុស៖ មិនទាន់បានកំណត់ BOT_TOKEN នៅក្នុងឯកសារ .env នៅឡើយទេ។")
         return
 
-    # Start dummy web server for Cloud Hosting (Render / Koyeb / Railway) if PORT is set
-    port_env = os.getenv("PORT")
-    if port_env:
-        threading.Thread(target=run_health_server, args=(int(port_env),), daemon=True).start()
+    # Start dummy web server for Cloud Hosting (Render / Koyeb / Railway)
+    port_env = os.getenv("PORT", "8080")
+    threading.Thread(target=run_health_server, args=(int(port_env),), daemon=True).start()
 
     # Initialize database
     database.init_db()
