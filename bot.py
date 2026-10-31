@@ -62,36 +62,36 @@ def get_main_admin_keyboard(customer_id: int) -> InlineKeyboardMarkup:
 def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("1️⃣ រង់ចាំបន្តិច", callback_data=f"qr:{customer_id}:1"),
-            InlineKeyboardButton("2️⃣ Done Send", callback_data=f"qr:{customer_id}:2"),
+            InlineKeyboardButton("1. រង់ចាំបន្តិច", callback_data=f"qr:{customer_id}:1"),
+            InlineKeyboardButton("2. Done Send", callback_data=f"qr:{customer_id}:2"),
         ],
         [
-            InlineKeyboardButton("3️⃣ Done Activated", callback_data=f"qr:{customer_id}:3"),
-            InlineKeyboardButton("4️⃣ Gmail Code", callback_data=f"qr:{customer_id}:4"),
+            InlineKeyboardButton("3. Done Activated", callback_data=f"qr:{customer_id}:3"),
+            InlineKeyboardButton("4. Gmail Code", callback_data=f"qr:{customer_id}:4"),
         ],
         [
-            InlineKeyboardButton("5️⃣ Processing", callback_data=f"qr:{customer_id}:5"),
-            InlineKeyboardButton("6️⃣ Not Available", callback_data=f"qr:{customer_id}:6"),
+            InlineKeyboardButton("5. Processing", callback_data=f"qr:{customer_id}:5"),
+            InlineKeyboardButton("6. Not Available", callback_data=f"qr:{customer_id}:6"),
         ],
         [
-            InlineKeyboardButton("7️⃣ Thank You", callback_data=f"qr:{customer_id}:7"),
-            InlineKeyboardButton("8️⃣ 10-15 Mins", callback_data=f"qr:{customer_id}:8"),
+            InlineKeyboardButton("7. Thank You", callback_data=f"qr:{customer_id}:7"),
+            InlineKeyboardButton("8. 10-15 Mins", callback_data=f"qr:{customer_id}:8"),
         ],
         [
-            InlineKeyboardButton("9️⃣ Send Gmail", callback_data=f"qr:{customer_id}:9"),
-            InlineKeyboardButton("🔟 Screenshot", callback_data=f"qr:{customer_id}:10"),
+            InlineKeyboardButton("9. Send Gmail", callback_data=f"qr:{customer_id}:9"),
+            InlineKeyboardButton("10. Screenshot", callback_data=f"qr:{customer_id}:10"),
         ],
         [
-            InlineKeyboardButton("1️⃣1️⃣ Plan Expired", callback_data=f"qr:{customer_id}:11"),
-            InlineKeyboardButton("1️⃣2️⃣ Waiting Please", callback_data=f"qr:{customer_id}:12"),
+            InlineKeyboardButton("11. Plan Expired", callback_data=f"qr:{customer_id}:11"),
+            InlineKeyboardButton("12. Waiting Please", callback_data=f"qr:{customer_id}:12"),
         ],
         [
-            InlineKeyboardButton("1️⃣3️⃣ Which Plan", callback_data=f"qr:{customer_id}:13"),
-            InlineKeyboardButton("1️⃣4️⃣ Checking Now", callback_data=f"qr:{customer_id}:14"),
+            InlineKeyboardButton("13. Which Plan", callback_data=f"qr:{customer_id}:13"),
+            InlineKeyboardButton("14. Checking Now", callback_data=f"qr:{customer_id}:14"),
         ],
         [
-            InlineKeyboardButton("1️⃣5️⃣ Need Gmail", callback_data=f"qr:{customer_id}:15"),
-            InlineKeyboardButton("💳 ផ្ញើ QR Scan", callback_data=f"sendqr:{customer_id}"),
+            InlineKeyboardButton("15. Need Gmail", callback_data=f"qr:{customer_id}:15"),
+            InlineKeyboardButton("ផ្ញើ QR Scan", callback_data=f"sendqr:{customer_id}"),
         ],
         [
             InlineKeyboardButton("🔙 ត្រឡប់ក្រោយ (Main Menu)", callback_data=f"mmenu:{customer_id}"),
@@ -892,7 +892,7 @@ async def products_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
-BOT_VERSION = "2.4-2row-menu"
+BOT_VERSION = "2.5-no-emoji-quickreplies"
 SERVER_START_TIME = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
