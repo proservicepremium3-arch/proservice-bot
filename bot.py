@@ -287,9 +287,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     customer_info = (
         f"🔔 <b>ភ្ញៀវថ្មីបានចុច /start</b>\n"
         f"👤 ឈ្មោះ: <b>{safe_name}</b> ({safe_uname})\n"
-        f"🆔 ID: <code>{user.id}</code> (ចុចលើលេខដើម្បី Copy)\n"
-        f"📋 ឆ្លើយតបរហ័ស៖ <code>/reply {user.id} </code>\n\n"
-        f"👇 <b>សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖</b>"
+        f"📋 ឆ្លើយតបរហ័ស៖ <code>/reply {user.id} </code>"
     )
 
     for admin_id in ADMIN_IDS:
@@ -307,10 +305,8 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 plain_info = (
                     f"🔔 ភ្ញៀវថ្មីបានចុច /start\n"
                     f"👤 ឈ្មោះ: {user.full_name}\n"
-                    f"🆔 ID: {user.id}\n"
                     f"🌐 Username: @{user.username if user.username else 'គ្មាន'}\n"
-                    f"📋 ឆ្លើយតបរហ័ស៖ /reply {user.id} \n\n"
-                    f"👇 សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖"
+                    f"📋 ឆ្លើយតបរហ័ស៖ /reply {user.id} "
                 )
                 msg = await context.bot.send_message(
                     chat_id=admin_id,
@@ -629,9 +625,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     header_text = (
         f"📩 <b>សារថ្មីពីភ្ញៀវ ({msg_type_str})៖</b>\n"
         f"👤 ឈ្មោះ: <b>{safe_customer_name}</b> ({safe_username_str})\n"
-        f"🆔 ID: <code>{user.id}</code> (ចុចលើលេខដើម្បី Copy)\n"
-        f"📋 ឆ្លើយតបរហ័ស៖ <code>/reply {user.id} </code>\n\n"
-        f"👇 <b>សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖</b>"
+        f"📋 ឆ្លើយតបរហ័ស៖ <code>/reply {user.id} </code>"
     )
 
     for admin_id in ADMIN_IDS:
@@ -649,9 +643,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 plain_header = (
                     f"📩 សារថ្មីពីភ្ញៀវ ({msg_type_str})៖\n"
                     f"👤 ឈ្មោះ: {customer_name} ({username_str})\n"
-                    f"🆔 ID: {user.id}\n"
-                    f"📋 ឆ្លើយតបរហ័ស៖ /reply {user.id} \n\n"
-                    f"👇 សូមជ្រើសរើស Menu ខាងក្រោមដើម្បីឆ្លើយតប៖"
+                    f"📋 ឆ្លើយតបរហ័ស៖ /reply {user.id} "
                 )
                 info_msg = await context.bot.send_message(
                     chat_id=admin_id,
@@ -904,7 +896,7 @@ async def products_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
-BOT_VERSION = "2.2-clean-start"
+BOT_VERSION = "2.3-clean-notification"
 SERVER_START_TIME = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
