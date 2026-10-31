@@ -50,16 +50,12 @@ QUICK_REPLIES = {
 def get_main_admin_keyboard(customer_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("⚡ Quick Replies (15) ➡️", callback_data=f"qmenu:{customer_id}"),
+            InlineKeyboardButton("⚡ Quick Replies (15)", callback_data=f"qmenu:{customer_id}"),
+            InlineKeyboardButton("📦 Products (13)", callback_data=f"pmenu:{customer_id}"),
         ],
         [
-            InlineKeyboardButton("📦 Products / សេវាកម្ម (13) ➡️", callback_data=f"pmenu:{customer_id}"),
-        ],
-        [
-            InlineKeyboardButton("📖 Guides / គោលការណ៍ (3) ➡️", callback_data=f"gmenu:{customer_id}"),
-        ],
-        [
-            InlineKeyboardButton("💳 ផ្ញើ QR Scan (Payment) 📲", callback_data=f"sendqr:{customer_id}"),
+            InlineKeyboardButton("📖 Guides (3)", callback_data=f"gmenu:{customer_id}"),
+            InlineKeyboardButton("💳 ផ្ញើ QR Scan", callback_data=f"sendqr:{customer_id}"),
         ],
     ])
 
@@ -896,7 +892,7 @@ async def products_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
-BOT_VERSION = "2.3-clean-notification"
+BOT_VERSION = "2.4-2row-menu"
 SERVER_START_TIME = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
