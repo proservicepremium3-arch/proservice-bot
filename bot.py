@@ -45,12 +45,13 @@ QUICK_REPLIES = {
     "13": "Just make sure, Please let us know again which plan you’d like to purchase 🥰",
     "14": "Please wait while we check for you now 🥰",
     "15": "We need your Gmail",
+    "16": "Hello bong! 😊 What can I do for you?",
 }
 
 def get_main_admin_keyboard(customer_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("⚡ Quick Replies (15)", callback_data=f"qmenu:{customer_id}"),
+            InlineKeyboardButton("⚡ Quick Replies (16)", callback_data=f"qmenu:{customer_id}"),
             InlineKeyboardButton("📦 Products (13)", callback_data=f"pmenu:{customer_id}"),
         ],
         [
@@ -91,6 +92,9 @@ def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("15. Need Gmail", callback_data=f"qr:{customer_id}:15"),
+            InlineKeyboardButton("16. Hello Bong", callback_data=f"qr:{customer_id}:16"),
+        ],
+        [
             InlineKeyboardButton("ផ្ញើ QR Scan", callback_data=f"sendqr:{customer_id}"),
         ],
         [
@@ -222,7 +226,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• /qr - មើល និងផ្ញើ QR Scan ទទួលប្រាក់\n"
             "• /products - មើលបញ្ជី និងផ្ញើព័ត៌មាន Products ទាំង ១៣\n"
             "• /guides - មើលបញ្ជី Guides & គោលការណ៍ទាំង ៣\n"
-            "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១៥\n"
+            "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១៦\n"
             "• /users - មើលចំនួនភ្ញៀវសរុប និង ៥ នាក់ចុងក្រោយ\n"
             "• /reply &lt;ID&gt; &lt;សារ&gt; - ផ្ញើសារទៅកាន់ភ្ញៀវតាមលេខសម្គាល់ ID\n"
             "• /broadcast &lt;សារ&gt; - ផ្ញើសារប្រកាសដំណឹងជូនភ្ញៀវទាំងអស់\n"
@@ -699,13 +703,13 @@ async def templates_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    msg = "⚡ <b>បញ្ជី Quick Reply Templates ទាំង ១៥៖</b>\n\n"
+    msg = "⚡ <b>បញ្ជី Quick Reply Templates ទាំង ១៦៖</b>\n\n"
     for k, v in QUICK_REPLIES.items():
         msg += f"<b>{k}️⃣:</b> <i>\"{v}\"</i>\n\n"
     msg += (
         "👉 <b>វិធីប្រើ៖</b>\n"
         "1. ចុចលើប៊ូតុង Quick Reply នៅខាងក្រោមសារភ្ញៀវភ្លាមៗ\n"
-        "2. ឬចុច <b>Reply</b> លើសារភ្ញៀវ រួចវាយលេខ <code>1</code> ដល់ <code>15</code>"
+        "2. ឬចុច <b>Reply</b> លើសារភ្ញៀវ រួចវាយលេខ <code>1</code> ដល់ <code>16</code>"
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
 
@@ -892,7 +896,7 @@ async def products_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
-BOT_VERSION = "2.5-no-emoji-quickreplies"
+BOT_VERSION = "2.6-quickreply-16"
 SERVER_START_TIME = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
