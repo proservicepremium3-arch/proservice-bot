@@ -55,6 +55,19 @@ def init_db():
         )
     """)
 
+    # Pending drafts table for preview and editing before send
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS pending_drafts (
+            draft_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            admin_msg_id INTEGER,
+            admin_id INTEGER NOT NULL,
+            customer_id INTEGER NOT NULL,
+            text TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # Default settings
     default_settings = {
         "auto_reply_enabled": "true",
@@ -227,5 +240,61 @@ def get_blocked_users():
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+
+def create_draft(admin_id: int, customer_id: int, text: str, admin_msg_id: int = None) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO pending_drafts (admin_id, customer_id, text, admin_msg_id, status)
+        VALUES (?, ?, ?, ?, 'pending')
+    """, (admin_id, customer_id, text, admin_msg_id))
+    draft_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return draft_id
+
+
+def update_draft_msg_id(draft_id: int, admin_msg_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE pending_drafts SET admin_msg_id = ? WHERE draft_id = ?", (admin_msg_id, draft_id))
+    conn.commit()
+    conn.close()
+
+
+def get_draft(draft_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM pending_drafts WHERE draft_id = ?", (draft_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+
+def get_draft_by_msg_id(admin_msg_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM pending_drafts WHERE admin_msg_id = ? ORDER BY draft_id DESC LIMIT 1", (admin_msg_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+
+def mark_draft_sent(draft_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE pending_drafts SET status = 'sent' WHERE draft_id = ?", (draft_id,))
+    conn.commit()
+    conn.close()
+
+
+def mark_draft_cancelled(draft_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE pending_drafts SET status = 'cancelled' WHERE draft_id = ?", (draft_id,))
+    conn.commit()
+    conn.close()
+
 
 

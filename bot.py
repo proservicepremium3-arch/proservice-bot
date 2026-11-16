@@ -30,22 +30,21 @@ import guides
 
 # Quick Reply Templates for Admin
 QUICK_REPLIES = {
-    "1": "🙏 ទទួលបានហើយ! សូមរង់ចាំបន្តិច Team នឹងឆ្លើយតបជូនបងអូនឆាប់ៗនេះ",
-    "2": "Done send  ✅ Please check your inbox and accept to get premium",
-    "3": "Done Activated ✅ Please take a moment to review it.",
+    "1": "Hello Dear! 😊 What can we do for you today...?",
+    "2": "Done send  ✅ Please check in SPAM/JUNK Mail as well and accpet to get your Premium 🥰",
+    "3": "Done Activated ✅ Please take a moment to review it🥰",
     "4": "Please use the Gmail ✅ account we provided to request your login code from us.",
-    "5": "Once it’s completed, we will inform you 🥰 Our team is processing your order now",
-    "6": "we not available for now 🥰 Please follow our groups to get new",
-    "7": "Thank you Dear, for reaching out to us! We’re here to support you with any issues you may encounter.🥰🙏",
-    "8": "We have received bong Please allow us 10-15 minutes to activate your account. Thank you! 🫰",
-    "9": "Please send us your Gmail address, and our team will check it for you soon 🥰",
+    "5": "Once it’s completed, we will inform you 🥰 Our team is processing your order...",
+    "6": "we not available for now 🥰 Please follow our group to get any updates...",
+    "7": "Thank you Dear, for reaching out to us! We’re here to support you with any issues you may encounter.🥰",
+    "8": "We have received, Please allow us sometimes to activate your account. Thank you! 🫰",
+    "9": "Please send us your Gmail address, our team will check it for you 🥰",
     "10": "Any problems? ⚠️ Please send us a screenshot or details to make it easier for us to help you. 🥰",
     "11": "Your plan has expired 🥰",
-    "12": "okay bong waiting Please😊",
+    "12": "waiting Please,, I’ve sent your request to the team. I'll let you know when I hear back🥰",
     "13": "Just make sure, Please let us know again which plan you’d like to purchase 🥰",
-    "14": "Please wait while we check for you now 🥰",
-    "15": "We need your Gmail",
-    "16": "Hello bong! 😊 What can I do for you?",
+    "14": "waiting Please, while we check for you 🥰",
+    "15": "can you send your Gmail we will check for you 🥰",
 }
 
 def get_main_admin_keyboard(customer_id: int, is_blocked: bool = None) -> InlineKeyboardMarkup:
@@ -63,7 +62,7 @@ def get_main_admin_keyboard(customer_id: int, is_blocked: bool = None) -> Inline
 
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("⚡ Quick Replies (16)", callback_data=f"qmenu:{customer_id}"),
+            InlineKeyboardButton("⚡ Quick Replies (15)", callback_data=f"qmenu:{customer_id}"),
             InlineKeyboardButton("📦 Products (13)", callback_data=f"pmenu:{customer_id}"),
         ],
         [
@@ -78,7 +77,7 @@ def get_main_admin_keyboard(customer_id: int, is_blocked: bool = None) -> Inline
 def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("1. រង់ចាំបន្តិច", callback_data=f"qr:{customer_id}:1"),
+            InlineKeyboardButton("1. Hello Dear", callback_data=f"qr:{customer_id}:1"),
             InlineKeyboardButton("2. Done Send", callback_data=f"qr:{customer_id}:2"),
         ],
         [
@@ -91,7 +90,7 @@ def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("7. Thank You", callback_data=f"qr:{customer_id}:7"),
-            InlineKeyboardButton("8. 10-15 Mins", callback_data=f"qr:{customer_id}:8"),
+            InlineKeyboardButton("8. Received Wait", callback_data=f"qr:{customer_id}:8"),
         ],
         [
             InlineKeyboardButton("9. Send Gmail", callback_data=f"qr:{customer_id}:9"),
@@ -99,17 +98,14 @@ def get_quick_reply_keyboard(customer_id: int) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton("11. Plan Expired", callback_data=f"qr:{customer_id}:11"),
-            InlineKeyboardButton("12. Waiting Please", callback_data=f"qr:{customer_id}:12"),
+            InlineKeyboardButton("12. Sent to Team", callback_data=f"qr:{customer_id}:12"),
         ],
         [
             InlineKeyboardButton("13. Which Plan", callback_data=f"qr:{customer_id}:13"),
             InlineKeyboardButton("14. Checking Now", callback_data=f"qr:{customer_id}:14"),
         ],
         [
-            InlineKeyboardButton("15. Need Gmail", callback_data=f"qr:{customer_id}:15"),
-            InlineKeyboardButton("16. Hello Bong", callback_data=f"qr:{customer_id}:16"),
-        ],
-        [
+            InlineKeyboardButton("15. Check Gmail", callback_data=f"qr:{customer_id}:15"),
             InlineKeyboardButton("ផ្ញើ QR Scan", callback_data=f"sendqr:{customer_id}"),
         ],
         [
@@ -241,7 +237,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• /qr - មើល និងផ្ញើ QR Scan ទទួលប្រាក់\n"
             "• /products - មើលបញ្ជី និងផ្ញើព័ត៌មាន Products ទាំង ១៣\n"
             "• /guides - មើលបញ្ជី Guides & គោលការណ៍ទាំង ៣\n"
-            "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១៦\n"
+            "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១៥\n"
             "• /users - មើលចំនួនភ្ញៀវសរុប និង ៥ នាក់ចុងក្រោយ\n"
             "• /reply &lt;ID&gt; &lt;សារ&gt; - ផ្ញើសារទៅកាន់ភ្ញៀវតាមលេខសម្គាល់ ID\n"
             "• /block &lt;ID&gt; - Block ភ្ញៀវ (Bot មិនបញ្ជូនសារមក Admin ទេ)\n"
@@ -510,6 +506,43 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Check if this is a reply to a forwarded/copied customer message
         if update.message.reply_to_message:
             replied_msg_id = update.message.reply_to_message.message_id
+
+            # Check if Admin is replying to a Pending Preview Draft (editing it!)
+            pending_draft = database.get_draft_by_msg_id(replied_msg_id)
+            if pending_draft and pending_draft["status"] == "pending":
+                target_customer_id = pending_draft["customer_id"]
+                edited_text = update.message.text or update.message.caption or ""
+
+                try:
+                    await context.bot.copy_message(
+                        chat_id=target_customer_id,
+                        from_chat_id=chat_id,
+                        message_id=update.message.message_id
+                    )
+                    database.mark_draft_sent(pending_draft["draft_id"])
+
+                    try:
+                        safe_edited = html.escape(edited_text or "(ឯកសារ / Media)")
+                        await context.bot.edit_message_text(
+                            chat_id=chat_id,
+                            message_id=replied_msg_id,
+                            text=(
+                                f"✅ <b>បានកែប្រែ និងផ្ញើជូនភ្ញៀវ ID: <code>{target_customer_id}</code> រួចរាល់!</b>\n"
+                                f"━━━━━━━━━━━━━━━━━━━━\n"
+                                f"<pre>{safe_edited}</pre>"
+                            ),
+                            parse_mode=ParseMode.HTML
+                        )
+                    except Exception:
+                        pass
+
+                    await update.message.reply_text("✅ បានផ្ញើសារដែលបានកែសម្រួលជូនភ្ញៀវរួចរាល់!", quote=True)
+                    return
+                except Exception as e:
+                    logger.error(f"Error sending edited draft to customer {target_customer_id}: {e}")
+                    await update.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}", quote=True)
+                    return
+
             customer_chat_id, customer_msg_id = database.get_customer_by_admin_msg(replied_msg_id)
 
             if customer_chat_id:
@@ -759,15 +792,47 @@ async def templates_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    msg = "⚡ <b>បញ្ជី Quick Reply Templates ទាំង ១៦៖</b>\n\n"
+    msg = "⚡ <b>បញ្ជី Quick Reply Templates ទាំង ១៥៖</b>\n\n"
     for k, v in QUICK_REPLIES.items():
         msg += f"<b>{k}️⃣:</b> <i>\"{v}\"</i>\n\n"
     msg += (
         "👉 <b>វិធីប្រើ៖</b>\n"
         "1. ចុចលើប៊ូតុង Quick Reply នៅខាងក្រោមសារភ្ញៀវភ្លាមៗ\n"
-        "2. ឬចុច <b>Reply</b> លើសារភ្ញៀវ រួចវាយលេខ <code>1</code> ដល់ <code>16</code>"
+        "2. ឬចុច <b>Reply</b> លើសារភ្ញៀវ រួចវាយលេខ <code>1</code> ដល់ <code>15</code>"
     )
     await update.message.reply_text(msg, parse_mode=ParseMode.HTML)
+
+
+async def send_preview_to_admin(query, context: ContextTypes.DEFAULT_TYPE, customer_id: int, title: str, text_to_send: str):
+    admin_id = query.from_user.id
+    draft_id = database.create_draft(admin_id=admin_id, customer_id=customer_id, text=text_to_send)
+
+    safe_text = html.escape(text_to_send)
+    preview_message_text = (
+        f"👁 <b>ផ្ទាំងត្រួតពិនិត្យសារ (Preview)៖ {title}</b>\n"
+        f"👤 ផ្ញើទៅកាន់ភ្ញៀវ ID: <code>{customer_id}</code>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"<pre>{safe_text}</pre>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"👉 <b>ជម្រើសរបស់លោកអ្នក៖</b>\n"
+        f"• បើត្រូវចិត្តហើយ៖ ចុចប៊ូតុង <b>[🚀 ផ្ញើទៅភ្ញៀវឥឡូវនេះ]</b>\n"
+        f"• បើចង់កែប្រែ៖ ចុចលើអក្សរខាងលើដើម្បី Copy រួចចុច <b>Reply</b> លើសារនេះដើម្បីកែសម្រួល\n"
+        f"• ឬចុច <b>[❌ បោះបង់]</b> ប្រសិនបើមិនចង់ផ្ញើ"
+    )
+
+    preview_keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("🚀 ផ្ញើទៅភ្ញៀវឥឡូវនេះ", callback_data=f"snd:{draft_id}"),
+            InlineKeyboardButton("❌ បោះបង់", callback_data=f"ccl:{draft_id}"),
+        ]
+    ])
+
+    sent_msg = await query.message.reply_text(
+        text=preview_message_text,
+        parse_mode=ParseMode.HTML,
+        reply_markup=preview_keyboard
+    )
+    database.update_draft_msg_id(draft_id, sent_msg.message_id)
 
 
 async def quick_reply_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -792,15 +857,13 @@ async def quick_reply_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     if not template_text:
         return
 
-    try:
-        await context.bot.send_message(chat_id=customer_id, text=template_text)
-        await query.message.reply_text(
-            f"✅ <b>បានផ្ញើ Quick Reply #{template_num} ជូនភ្ញៀវរួចរាល់៖</b>\n<i>\"{template_text}\"</i>",
-            parse_mode=ParseMode.HTML
-        )
-    except Exception as e:
-        logger.error(f"Error sending quick reply via button: {e}")
-        await query.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}")
+    await send_preview_to_admin(
+        query=query,
+        context=context,
+        customer_id=customer_id,
+        title=f"Quick Reply #{template_num}",
+        text_to_send=template_text
+    )
 
 
 async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -841,15 +904,13 @@ async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT
             prod_key = parts[2]
             prod_info = products.PRODUCTS.get(prod_key)
             if prod_info:
-                try:
-                    await context.bot.send_message(chat_id=customer_id, text=prod_info["text"])
-                    await query.message.reply_text(
-                        f"✅ <b>បានផ្ញើព័ត៌មាន {prod_info['name']} ជូនភ្ញៀវរួចរាល់!</b>",
-                        parse_mode=ParseMode.HTML
-                    )
-                except Exception as e:
-                    logger.error(f"Error sending product via button: {e}")
-                    await query.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}")
+                await send_preview_to_admin(
+                    query=query,
+                    context=context,
+                    customer_id=customer_id,
+                    title=f"Product: {prod_info['name']}",
+                    text_to_send=prod_info["text"]
+                )
     elif data.startswith("guide:"):
         parts = data.split(":")
         if len(parts) == 3:
@@ -857,15 +918,52 @@ async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT
             guide_key = parts[2]
             guide_info = guides.GUIDES.get(guide_key)
             if guide_info:
-                try:
-                    await context.bot.send_message(chat_id=customer_id, text=guide_info["text"])
-                    await query.message.reply_text(
-                        f"✅ <b>បានផ្ញើ {guide_info['name']} ជូនភ្ញៀវរួចរាល់!</b>",
-                        parse_mode=ParseMode.HTML
-                    )
-                except Exception as e:
-                    logger.error(f"Error sending guide via button: {e}")
-                    await query.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}")
+                await send_preview_to_admin(
+                    query=query,
+                    context=context,
+                    customer_id=customer_id,
+                    title=f"Guide: {guide_info['name']}",
+                    text_to_send=guide_info["text"]
+                )
+    elif data.startswith("snd:"):
+        draft_id = int(data.split(":")[1])
+        draft = database.get_draft(draft_id)
+        if not draft:
+            await query.answer("⚠️ សារព្រាងនេះរកមិនឃើញ ឬផុតកំណត់ហើយ!", show_alert=True)
+            return
+
+        if draft["status"] != "pending":
+            await query.answer(f"ℹ️ សារនេះត្រូវបាន {draft['status']} រួចហើយ!", show_alert=True)
+            return
+
+        try:
+            await context.bot.send_message(chat_id=draft["customer_id"], text=draft["text"])
+            database.mark_draft_sent(draft_id)
+            await query.answer("✅ បានផ្ញើទៅភ្ញៀវជោគជ័យ!")
+            safe_text = html.escape(draft["text"])
+            await query.edit_message_text(
+                text=(
+                    f"✅ <b>បានផ្ញើសារនេះជូនភ្ញៀវ ID: <code>{draft['customer_id']}</code> រួចរាល់!</b>\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"<pre>{safe_text}</pre>"
+                ),
+                parse_mode=ParseMode.HTML
+            )
+        except Exception as e:
+            logger.error(f"Error sending draft {draft_id}: {e}")
+            await query.answer(f"❌ បរាជ័យក្នុងការផ្ញើ៖ {e}", show_alert=True)
+    elif data.startswith("ccl:"):
+        draft_id = int(data.split(":")[1])
+        draft = database.get_draft(draft_id)
+        if draft and draft["status"] == "pending":
+            database.mark_draft_cancelled(draft_id)
+            await query.answer("❌ បានបោះបង់!")
+            await query.edit_message_text(
+                text="❌ <b>បានបោះបង់ការផ្ញើសារនេះរួចរាល់!</b>",
+                parse_mode=ParseMode.HTML
+            )
+        else:
+            await query.answer("ℹ️ បានបោះបង់ ឬផ្ញើរួចហើយ។")
     elif data.startswith("sendqr:"):
         customer_id = int(data.split(":")[1])
         try:
@@ -1092,7 +1190,7 @@ async def blocked_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-BOT_VERSION = "2.7-block-unblock"
+BOT_VERSION = "2.9-preview-and-edit"
 SERVER_START_TIME = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
@@ -1161,9 +1259,9 @@ def main():
     app.add_handler(CommandHandler("blocked", blocked_command))
     app.add_handler(CommandHandler("broadcast", broadcast_command))
 
-    # Inline Button Callback (Quick Replies, Products & Guides Navigation, Block/Unblock)
+    # Inline Button Callback (Quick Replies, Products & Guides Navigation, Block/Unblock, Preview Send/Cancel)
     app.add_handler(CallbackQueryHandler(quick_reply_callback, pattern=r"^qr:"))
-    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|mmenu|prod|guide|sendqr|adm_prev|block|unblock):"))
+    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|mmenu|prod|guide|sendqr|adm_prev|block|unblock|snd|ccl):"))
 
     # All regular messages (text, photos, files, voice, etc.)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_message))
