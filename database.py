@@ -46,6 +46,15 @@ def init_db():
         )
     """)
 
+    # Blocked users table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS blocked_users (
+            user_id INTEGER PRIMARY KEY,
+            blocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            reason TEXT
+        )
+    """)
+
     # Default settings
     default_settings = {
         "auto_reply_enabled": "true",
@@ -176,4 +185,47 @@ def get_all_users():
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+
+def block_user(user_id: int, reason: str = "") -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO blocked_users (user_id, reason) VALUES (?, ?)", (user_id, reason))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def unblock_user(user_id: int) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM blocked_users WHERE user_id = ?", (user_id,))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return deleted
+
+
+def is_user_blocked(user_id: int) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM blocked_users WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return row is not None
+
+
+def get_blocked_users():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT b.user_id, b.blocked_at, b.reason, u.first_name, u.last_name, u.username 
+        FROM blocked_users b 
+        LEFT JOIN users u ON b.user_id = u.user_id 
+        ORDER BY b.blocked_at DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
 

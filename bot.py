@@ -48,7 +48,19 @@ QUICK_REPLIES = {
     "16": "Hello bong! 😊 What can I do for you?",
 }
 
-def get_main_admin_keyboard(customer_id: int) -> InlineKeyboardMarkup:
+def get_main_admin_keyboard(customer_id: int, is_blocked: bool = None) -> InlineKeyboardMarkup:
+    if is_blocked is None:
+        try:
+            is_blocked = database.is_user_blocked(customer_id)
+        except Exception:
+            is_blocked = False
+
+    block_btn = (
+        InlineKeyboardButton("✅ Unblock ភ្ញៀវ", callback_data=f"unblock:{customer_id}")
+        if is_blocked
+        else InlineKeyboardButton("🚫 Block ភ្ញៀវ", callback_data=f"block:{customer_id}")
+    )
+
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton("⚡ Quick Replies (16)", callback_data=f"qmenu:{customer_id}"),
@@ -57,6 +69,9 @@ def get_main_admin_keyboard(customer_id: int) -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton("📖 Guides (3)", callback_data=f"gmenu:{customer_id}"),
             InlineKeyboardButton("💳 ផ្ញើ QR Scan", callback_data=f"sendqr:{customer_id}"),
+        ],
+        [
+            block_btn,
         ],
     ])
 
@@ -229,6 +244,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• /templates - មើលបញ្ជី Quick Reply Templates ទាំង ១៦\n"
             "• /users - មើលចំនួនភ្ញៀវសរុប និង ៥ នាក់ចុងក្រោយ\n"
             "• /reply &lt;ID&gt; &lt;សារ&gt; - ផ្ញើសារទៅកាន់ភ្ញៀវតាមលេខសម្គាល់ ID\n"
+            "• /block &lt;ID&gt; - Block ភ្ញៀវ (Bot មិនបញ្ជូនសារមក Admin ទេ)\n"
+            "• /unblock &lt;ID&gt; - Unblock ភ្ញៀវឱ្យឆាតមកវិញបាន\n"
+            "• /blocked - មើលបញ្ជីភ្ញៀវដែលបាន Block ទាំងអស់\n"
             "• /broadcast &lt;សារ&gt; - ផ្ញើសារប្រកាសដំណឹងជូនភ្ញៀវទាំងអស់\n"
             "• /autoreply on ឬ off - បើក ឬបិទការឆ្លើយតបស្វ័យប្រវត្តិ\n"
             "• /setwelcome &lt;សារ&gt; - កំណត់សារស្វាគមន៍ថ្មី\n"
@@ -279,6 +297,11 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         except Exception:
             pass
+
+    # Check if user is blocked - if blocked, do NOT notify admin!
+    if database.is_user_blocked(user.id):
+        logger.info(f"User {user.id} is blocked. Skipping admin notification on /start.")
+        return
 
     # 3. Notify Admin about customer clicking /start
     safe_name = html.escape(user.full_name or "Unknown")
@@ -562,6 +585,34 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         await update.message.reply_text(f"❌ មិនអាចផ្ញើជូនភ្ញៀវបានទេ៖ {e}", quote=True)
                         return
 
+                # Check if Admin sent block/unblock shortcut
+                if clean_shortcut.lower() in ["block", "blocked"]:
+                    database.block_user(customer_chat_id)
+                    await update.message.reply_text(
+                        f"🚫 <b>បាន Block ភ្ញៀវ ID: <code>{customer_chat_id}</code> រួចរាល់!</b>\n\n"
+                        f"• ពេលភ្ញៀវនេះឆាតមក Bot នឹងមិនបញ្ជូនសារមកកាន់លោកអ្នកទៀតឡើយ។\n"
+                        f"• ភ្ញៀវនៅតែអាចផ្ញើសារបានធម្មតា (មិនដឹងថាត្រូវបាន Block ទេ)។",
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton("✅ Unblock ភ្ញៀវនេះវិញ", callback_data=f"unblock:{customer_chat_id}")]
+                        ]),
+                        quote=True
+                    )
+                    return
+
+                if clean_shortcut.lower() in ["unblock"]:
+                    database.unblock_user(customer_chat_id)
+                    await update.message.reply_text(
+                        f"✅ <b>បាន Unblock ភ្ញៀវ ID: <code>{customer_chat_id}</code> រួចរាល់!</b>\n\n"
+                        f"ពេលភ្ញៀវនេះឆាតមក Bot នឹងបញ្ជូនសារមកកាន់លោកអ្នកវិញជាធម្មតា។",
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=InlineKeyboardMarkup([
+                            [InlineKeyboardButton("🚫 Block ភ្ញៀវនេះឡើងវិញ", callback_data=f"block:{customer_chat_id}")]
+                        ]),
+                        quote=True
+                    )
+                    return
+
                 try:
                     # Forward/Copy the admin's reply directly to the customer
                     await context.bot.copy_message(
@@ -588,6 +639,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 2. CUSTOMER HANDLING (Customer sending message to Bot)
     database.save_or_update_user(user.id, user.first_name, user.last_name, user.username)
+
+    # Check if customer is blocked - if blocked, do NOT forward/notify admin!
+    if database.is_user_blocked(user.id):
+        logger.info(f"Customer {user.id} is blocked. Message dropped silently.")
+        return
 
     # Check and trigger auto-reply
     if database.should_send_autoreply(user.id, COOLDOWN_MINUTES):
@@ -821,6 +877,44 @@ async def menu_navigation_callback(update: Update, context: ContextTypes.DEFAULT
         except Exception as e:
             logger.error(f"Error sending QR via button: {e}")
             await query.message.reply_text(f"❌ មិនអាចផ្ញើ QR ជូនភ្ញៀវបានទេ៖ {e}")
+    elif data.startswith("block:"):
+        customer_id = int(data.split(":")[1])
+        database.block_user(customer_id)
+        try:
+            await query.edit_message_reply_markup(
+                reply_markup=get_main_admin_keyboard(customer_id, is_blocked=True)
+            )
+        except Exception:
+            pass
+        await query.answer("🚫 បាន Block ភ្ញៀវរួចរាល់!")
+        await query.message.reply_text(
+            f"🚫 <b>បាន Block ភ្ញៀវ ID: <code>{customer_id}</code> រួចរាល់!</b>\n\n"
+            f"• ពេលភ្ញៀវនេះឆាតមក Bot នឹងមិនបញ្ជូនសារមកកាន់លោកអ្នកទៀតឡើយ។\n"
+            f"• ភ្ញៀវនៅតែអាចផ្ញើសារបានធម្មតា (មិនដឹងថាត្រូវបាន Block ទេ)។\n"
+            f"• លោកអ្នកអាចចុចប៊ូតុងខាងក្រោម ឬវាយ <code>/unblock {customer_id}</code> ដើម្បីបើកវិញគ្រប់ពេល។",
+            parse_mode=ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("✅ Unblock ភ្ញៀវនេះវិញ", callback_data=f"unblock:{customer_id}")]
+            ])
+        )
+    elif data.startswith("unblock:"):
+        customer_id = int(data.split(":")[1])
+        database.unblock_user(customer_id)
+        try:
+            await query.edit_message_reply_markup(
+                reply_markup=get_main_admin_keyboard(customer_id, is_blocked=False)
+            )
+        except Exception:
+            pass
+        await query.answer("✅ បាន Unblock ភ្ញៀវរួចរាល់!")
+        await query.message.reply_text(
+            f"✅ <b>បាន Unblock ភ្ញៀវ ID: <code>{customer_id}</code> រួចរាល់!</b>\n\n"
+            f"ពេលភ្ញៀវនេះឆាតមក Bot នឹងបញ្ជូនសារមកកាន់លោកអ្នកវិញជាធម្មតា។",
+            parse_mode=ParseMode.HTML,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("🚫 Block ភ្ញៀវនេះឡើងវិញ", callback_data=f"block:{customer_id}")]
+            ])
+        )
     elif data.startswith("adm_prev:"):
         welcome_msg = database.get_setting("welcome_message")
         if not welcome_msg:
@@ -896,7 +990,109 @@ async def products_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(text, parse_mode=ParseMode.HTML)
 
 
-BOT_VERSION = "2.6-quickreply-16"
+async def block_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return
+
+    target_id = None
+    # Check if replying to customer message
+    if update.message.reply_to_message:
+        replied_msg_id = update.message.reply_to_message.message_id
+        c_id, _ = database.get_customer_by_admin_msg(replied_msg_id)
+        if c_id:
+            target_id = c_id
+
+    # Or from command argument: /block 12345678
+    if not target_id and context.args:
+        arg = context.args[0].strip()
+        if arg.isdigit():
+            target_id = int(arg)
+
+    if not target_id:
+        await update.message.reply_text(
+            "⚠️ <b>របៀបប្រើពាក្យបញ្ជា Block៖</b>\n"
+            "• ចុច Reply លើសាររបស់ភ្ញៀវ រួចវាយ <code>/block</code>\n"
+            "• ឬវាយ <code>/block &lt;User_ID&gt;</code> (ឧ. <code>/block 1147090798</code>)",
+            parse_mode=ParseMode.HTML
+        )
+        return
+
+    database.block_user(target_id)
+    await update.message.reply_text(
+        f"🚫 <b>បាន Block ភ្ញៀវ ID: <code>{target_id}</code> រួចរាល់!</b>\n\n"
+        f"• ពេលភ្ញៀវនេះឆាតមក Bot នឹងមិនបញ្ជូនសារមកកាន់លោកអ្នកទៀតឡើយ។\n"
+        f"• ភ្ញៀវនៅតែអាចផ្ញើសារបានធម្មតា (មិនដឹងថាត្រូវបាន Block ទេ)។",
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("✅ Unblock ភ្ញៀវនេះវិញ", callback_data=f"unblock:{target_id}")]
+        ])
+    )
+
+
+async def unblock_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return
+
+    target_id = None
+    if update.message.reply_to_message:
+        replied_msg_id = update.message.reply_to_message.message_id
+        c_id, _ = database.get_customer_by_admin_msg(replied_msg_id)
+        if c_id:
+            target_id = c_id
+
+    if not target_id and context.args:
+        arg = context.args[0].strip()
+        if arg.isdigit():
+            target_id = int(arg)
+
+    if not target_id:
+        await update.message.reply_text(
+            "⚠️ <b>របៀបប្រើពាក្យបញ្ជា Unblock៖</b>\n"
+            "• ចុច Reply លើសាររបស់ភ្ញៀវ រួចវាយ <code>/unblock</code>\n"
+            "• ឬវាយ <code>/unblock &lt;User_ID&gt;</code> (ឧ. <code>/unblock 1147090798</code>)",
+            parse_mode=ParseMode.HTML
+        )
+        return
+
+    database.unblock_user(target_id)
+    await update.message.reply_text(
+        f"✅ <b>បាន Unblock ភ្ញៀវ ID: <code>{target_id}</code> រួចរាល់!</b>\n\n"
+        f"ពេលភ្ញៀវនេះឆាតមក Bot នឹងបញ្ជូនសារមកកាន់លោកអ្នកវិញជាធម្មតា។",
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🚫 Block ភ្ញៀវនេះឡើងវិញ", callback_data=f"block:{target_id}")]
+        ])
+    )
+
+
+async def blocked_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return
+
+    blocked = database.get_blocked_users()
+    if not blocked:
+        await update.message.reply_text("ℹ️ <b>បច្ចុប្បន្នគ្មានភ្ញៀវណាត្រូវបាន Block ឡើយ។</b>", parse_mode=ParseMode.HTML)
+        return
+
+    text = f"🚫 <b>បញ្ជីភ្ញៀវដែលបាន Block ({len(blocked)} នាក់)៖</b>\n\n"
+    buttons = []
+    for idx, b in enumerate(blocked, 1):
+        uid = b["user_id"]
+        fname = b["first_name"] or ""
+        lname = b["last_name"] or ""
+        name = f"{fname} {lname}".strip() or "Unknown"
+        uname = f"@{b['username']}" if b["username"] else "គ្មាន username"
+        text += f"{idx}. <b>{html.escape(name)}</b> ({html.escape(uname)})\n   🆔 ID: <code>{uid}</code> | <code>/unblock {uid}</code>\n"
+        buttons.append([InlineKeyboardButton(f"✅ Unblock {name[:12]} ({uid})", callback_data=f"unblock:{uid}")])
+
+    await update.message.reply_text(
+        text,
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+
+BOT_VERSION = "2.7-block-unblock"
 SERVER_START_TIME = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
@@ -960,11 +1156,14 @@ def main():
     app.add_handler(CommandHandler("setwelcome", set_welcome_command))
     app.add_handler(CommandHandler("setautoreply", set_autoreply_command))
     app.add_handler(CommandHandler("reply", reply_by_id_command))
+    app.add_handler(CommandHandler("block", block_command))
+    app.add_handler(CommandHandler("unblock", unblock_command))
+    app.add_handler(CommandHandler("blocked", blocked_command))
     app.add_handler(CommandHandler("broadcast", broadcast_command))
 
-    # Inline Button Callback (Quick Replies, Products & Guides Navigation)
+    # Inline Button Callback (Quick Replies, Products & Guides Navigation, Block/Unblock)
     app.add_handler(CallbackQueryHandler(quick_reply_callback, pattern=r"^qr:"))
-    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|mmenu|prod|guide|sendqr|adm_prev):"))
+    app.add_handler(CallbackQueryHandler(menu_navigation_callback, pattern=r"^(pmenu|gmenu|qmenu|mmenu|prod|guide|sendqr|adm_prev|block|unblock):"))
 
     # All regular messages (text, photos, files, voice, etc.)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_message))
